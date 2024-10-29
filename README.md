@@ -1,6 +1,6 @@
-# Insanely fast AI voice assistant in 50 LOC
+# AI voice assistant
 
-This repo contains everything you need to run your own AI voice assistant that responds to you in less than 500ms.
+This repo contains everything you need to run your own AI voice assistant.
 
 It uses:
 - 🌐 [LiveKit](https://github.com/livekit) transport
@@ -8,14 +8,46 @@ It uses:
 - 🧠 [Cerebras](https://inference.cerebras.ai/) LLM
 - 🗣️ [Cartesia](https://cartesia.ai/) TTS
 
+## Build the app
+
+1. Clone the repository:
+   ```bash
+   git clone <repository-url>
+   ```
+2. Navigate into the project directory:
+   ```bash
+   cd <project-directory>
+   ```
+3. Set up a virtual environment:
+   ```bash
+   python -m venv .venv
+   ```
+4. Activate the virtual environment:
+   - On macOS and Linux:
+     ```bash
+     source .venv/bin/activate
+     ```
+   - On Windows:
+     ```bash
+     .venv\Scripts\activate
+     ```
+5. Install the required dependencies:
+   ```bash
+   pip install -r requirements.txt
+   ```
+6. Copy the example environment file and configure your environment variables:
+   ```bash
+   cp .env.example .env
+   ```
+7. Add values for keys in `.env` as per your configuration.
+
 ## Run the assistant
 
-1. `python -m venv .venv`
-2. `source .venv/bin/activate`
-3. `pip install -r requirements.txt`
-4. `cp .env.example .env`
-5. add values for keys in `.env`
-6. `python main.py dev`
+1. Ensure your virtual environment is activated.
+2. Start the assistant in development mode:
+   ```bash
+   python main.py dev
+   ```
 
 ## Run a client
 
