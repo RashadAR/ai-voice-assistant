@@ -2,6 +2,8 @@
 __pycache__/
 *.py[cod]
 *$py.class
+adaptive-neuralnet-43bas7/
+test.py
 
 # C extensions
 *.so

@@ -3,9 +3,10 @@ import asyncio
 import datetime
 from typing import Dict
 import aiohttp
-from livekit.agents import JobContext, WorkerOptions, cli, JobProcess
+from livekit.agents import JobContext, WorkerOptions, cli, JobProcess, AutoSubscribe
 from livekit.agents.llm import ChatContext, ChatMessage
 from livekit.agents.voice_assistant import VoiceAssistant
+from livekit.agents import llm
 from livekit.plugins import deepgram, silero, cartesia, openai
 from geopy.geocoders import Nominatim
 from dotenv import load_dotenv
@@ -140,35 +141,52 @@ async def entrypoint(ctx: JobContext):
     initial_ctx = ChatContext(
         messages=[
             ChatMessage(
-                role="system",
+                role="assistant",
                 content="""You are a helpful voice assistant designed for elderly users. 
                 You can help with weather information, web searches, news updates, and general conversation. 
-                Keep responses clear, concise, and easy to understand. Speak naturally and warmly."""
+                Keep responses concise, short and to point. Speak naturally and warmly. You are developed by John Doe"""
             )
         ]
     )
 
-    assistant = EnhancedVoiceAssistant(
+    agent = EnhancedVoiceAssistant(
         vad=ctx.proc.userdata["vad"],
-        stt=deepgram.STT(),
+        stt=deepgram.STT(
+            language="hi",
+            model="nova-2-medical"
+        ),
         llm=openai.LLM(
             base_url="https://api.cerebras.ai/v1",
             api_key=os.environ.get("CEREBRAS_API_KEY"),
-            model="llama3.1-8b",
+            model="llama-3.3-70b", # modififed model to 70b from 8b
         ),
         tts=cartesia.TTS(
-            voice="248be419-c632-4f23-adf1-5324ed7dbf1d"
+            language="hi",
+            voice="3b554273-4299-48b9-9aaf-eefd438e3941" # modified id indian-lady cerebras voice
         ),
         chat_ctx=initial_ctx,
+        # whether the agent can be interrupted
+        allow_interruptions=True,
+        # sensitivity of when to interrupt
+        interrupt_speech_duration=0.5,
+        interrupt_min_words=0,
+        # minimal silence duration to consider end of turn
+        min_endpointing_delay=0.5,
+        
+        # Use this callback to modifiy stt before passed to llm, so technically we can parse it and route
+        # callback to run before LLM is called, can be used to modify chat context
+        # before_llm_cb=None,
+        # # callback to run before TTS is called, can be used to customize pronounciation
+        # before_tts_cb=None,
     )
 
-    await assistant.setup()
-    await ctx.connect()
-    assistant.start(ctx.room)
+    await agent.setup()
+    await ctx.connect(auto_subscribe=AutoSubscribe.AUDIO_ONLY)
+    agent.start(ctx.room)
     
     await asyncio.sleep(1)
-    await assistant.say(
-        "Hello! I'm your personal assistant. What would you like to do?",
+    await agent.say(
+        "Hello I'm Shaalini, your personal assistant. What would you like to do?",
         allow_interruptions=True
     )
 
