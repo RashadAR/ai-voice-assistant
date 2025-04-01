@@ -59,7 +59,7 @@ class AssistantFnc(llm.FunctionContext):
 
 
 
-func_ctx = AssistantFnc()
+
 
 def prewarm(proc: JobProcess):
     """Initialize models before main execution"""
@@ -72,7 +72,7 @@ async def entrypoint(ctx: JobContext):
             ChatMessage(
                 role="assistant",
                 content="""You are a helpful voice assistant designed for elderly users. 
-                You can help with weather information, web searches, news updates, and general conversation. 
+                You can help with weather information, medication reminders, and emergency alerts. 
                 Keep responses concise, short and to point. Speak naturally and warmly."""
             )
         ]
@@ -101,7 +101,7 @@ async def entrypoint(ctx: JobContext):
         # minimal silence duration to consider end of turn
         min_endpointing_delay=0.5,
         
-        fnc_ctx= func_ctx
+        fnc_ctx= AssistantFnc()
     )
 
     await ctx.connect(auto_subscribe=AutoSubscribe.AUDIO_ONLY)
