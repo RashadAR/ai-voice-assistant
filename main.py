@@ -29,15 +29,32 @@ class AssistantFnc(llm.FunctionContext):
     ):
         """Called when the user asks about the weather. This function will return the weather and humidity for the given location."""
         try:
-            geolocator = Nominatim(user_agent="voice_assistant")
+            # Input validation
+            if not location or len(location.strip()) == 0:
+                return "Please provide a valid location name."
+            
+            # Sanitize location input to prevent potential issues
+            location = location.strip()[:100]  # Limit length to prevent abuse
+            
+            geolocator = Nominatim(user_agent="voice_assistant/1.0")
             location_data = geolocator.geocode(location)
             if not location_data:
                 return "I couldn't find that location. Could you please be more specific?"
 
             latitude, longitude = location_data.latitude, location_data.longitude
             WEATHER_API_KEY = os.getenv("WEATHER_API_KEY")
+            
+            # Validate API key presence
+            if not WEATHER_API_KEY:
+                return "Weather service is currently unavailable."
+            
             url = f"https://api.openweathermap.org/data/2.5/weather?lat={latitude}&lon={longitude}&appid={WEATHER_API_KEY}"
-            async with aiohttp.ClientSession() as session:
+            
+            # Configure secure HTTPS session
+            timeout = aiohttp.ClientTimeout(total=10)  # 10 second timeout
+            connector = aiohttp.TCPConnector(verify_ssl=True)  # Ensure SSL verification
+            
+            async with aiohttp.ClientSession(timeout=timeout, connector=connector) as session:
                 async with session.get(url) as response:
                     if response.status == 200:
                         data = await response.json()
@@ -48,7 +65,7 @@ class AssistantFnc(llm.FunctionContext):
                     else:
                         return f"Failed to get weather data, status code: {response.status}"
         except Exception as e:
-            return f"I'm having trouble getting the weather information right now. {str(e)}"
+            return "I'm having trouble getting the weather information right now. Please try again later."
 
     @llm.ai_callable()
     async def get_alerts(self):
@@ -59,8 +76,16 @@ class AssistantFnc(llm.FunctionContext):
             emergency_contact = os.getenv("EMERGENCY_CONTACT")
             twilio_number = os.getenv("TWILIO_PHONE_NUMBER")
 
+            # Validate all required environment variables
             if not all([account_sid, auth_token, emergency_contact, twilio_number]):
                 return "Emergency alert service is not properly configured."
+            
+            # Basic validation for phone number format (ensure they start with + and contain only digits)
+            if not (emergency_contact.startswith('+') and emergency_contact[1:].replace(' ', '').replace('-', '').isdigit()):
+                return "Emergency alert service configuration error."
+            
+            if not (twilio_number.startswith('+') and twilio_number[1:].replace(' ', '').replace('-', '').isdigit()):
+                return "Emergency alert service configuration error."
 
             client = Client(account_sid, auth_token)
             message = client.messages.create(
@@ -69,9 +94,9 @@ class AssistantFnc(llm.FunctionContext):
                 to=emergency_contact,
             )
 
-            return f"Emergency alert sent successfully to {emergency_contact}."
+            return "Emergency alert sent successfully."
         except Exception as e:
-            return f"Failed to send emergency alert. Error: {str(e)}"
+            return "Failed to send emergency alert. Please try again or contact emergency services directly."
 
 
 def prewarm(proc: JobProcess):
